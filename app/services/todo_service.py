@@ -11,19 +11,25 @@ class TodoService:
     def __init__(self, db: Session):
         self.repo = TodoRepository(db)
     
-    def create_todo(self, todo: TodoCreate) -> Todo:
-        """Create a new todo"""
-        created_todo = self.repo.create(todo)
+    def create_todo(self, todo: TodoCreate, owner_id: int) -> Todo:
+        """Create a new todo for the current user"""
+        # Add owner_id to the todo data
+        todo_data = todo.dict()
+        todo_data['owner_id'] = owner_id
+        from app.schemas.todo import TodoCreate as TodoCreateDict
+        todo_with_owner = TodoCreate(**todo_data)
+        created_todo = self.repo.create(todo_with_owner, owner_id=owner_id)
         return Todo.from_orm(created_todo)
     
     def get_todos(self, 
+                 owner_id: int,
                  is_done: Optional[bool] = None, 
                  q: Optional[str] = None, 
                  sort: Optional[str] = None,
                  limit: int = 10, 
                  offset: int = 0) -> TodoListResponse:
-        """Get todos with filtering, searching, sorting and pagination"""
-        todos, total = self.repo.get_all(is_done=is_done, q=q, sort=sort, limit=limit, offset=offset)
+        """Get todos for the current user with filtering, searching, sorting and pagination"""
+        todos, total = self.repo.get_all(owner_id=owner_id, is_done=is_done, q=q, sort=sort, limit=limit, offset=offset)
         todo_objects = [Todo.from_orm(todo) for todo in todos]
         
         return TodoListResponse(
@@ -33,27 +39,27 @@ class TodoService:
             offset=offset
         )
     
-    def get_todo(self, todo_id: int) -> Optional[Todo]:
-        """Get todo by ID"""
-        todo = self.repo.get_by_id(todo_id)
+    def get_todo(self, todo_id: int, owner_id: int) -> Optional[Todo]:
+        """Get todo by ID - verify ownership"""
+        todo = self.repo.get_by_id(todo_id, owner_id=owner_id)
         if todo:
             return Todo.from_orm(todo)
         return None
     
-    def update_todo(self, todo_id: int, todo_update: TodoUpdate) -> Optional[Todo]:
-        """Update todo"""
-        updated_todo = self.repo.update(todo_id, todo_update)
+    def update_todo(self, todo_id: int, owner_id: int, todo_update: TodoUpdate) -> Optional[Todo]:
+        """Update todo - verify ownership"""
+        updated_todo = self.repo.update(todo_id, todo_update, owner_id=owner_id)
         if updated_todo:
             return Todo.from_orm(updated_todo)
         return None
     
-    def delete_todo(self, todo_id: int) -> bool:
-        """Delete todo"""
-        return self.repo.delete(todo_id)
+    def delete_todo(self, todo_id: int, owner_id: int) -> bool:
+        """Delete todo - verify ownership"""
+        return self.repo.delete(todo_id, owner_id=owner_id)
     
-    def mark_complete(self, todo_id: int) -> Optional[Todo]:
-        """Mark todo as complete"""
-        completed_todo = self.repo.mark_complete(todo_id)
+    def mark_complete(self, todo_id: int, owner_id: int) -> Optional[Todo]:
+        """Mark todo as complete - verify ownership"""
+        completed_todo = self.repo.mark_complete(todo_id, owner_id=owner_id)
         if completed_todo:
             return Todo.from_orm(completed_todo)
         return None

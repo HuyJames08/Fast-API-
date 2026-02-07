@@ -1,8 +1,30 @@
-# User schemas
-# Will be implemented in Level 5
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+from datetime import datetime
 
-# from pydantic import BaseModel, EmailStr
-# from typing import Optional
 
-# TODO: Implement in Level 5
-pass
+class UserBase(BaseModel):
+    email: EmailStr = Field(..., description="User email address")
+
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=6, description="Password (min 6 chars)")
+
+
+class UserLogin(UserBase):
+    password: str
+
+
+class User(UserBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class UserResponse(User):
+    """Response without sensitive fields"""
+    pass

@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.models.todo import Todo  # Import models to register them
-from app.routers import health, todos
+from app.models.user import User  # Import User model to register it
+from app.routers import health, todos, auth
 
 # Create all tables on startup
 Base.metadata.create_all(bind=engine)
@@ -29,6 +30,7 @@ app.add_middleware(
 # API v1 Routes
 api_v1_prefix = settings.api_v1_prefix
 app.include_router(health.router, prefix=api_v1_prefix)
+app.include_router(auth.router, prefix=api_v1_prefix)
 app.include_router(todos.router, prefix=api_v1_prefix)
 
 

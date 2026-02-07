@@ -11,12 +11,13 @@ class TodoRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, todo: TodoCreate) -> TodoModel:
+    def create(self, todo: TodoCreate, owner_id: int) -> TodoModel:
         """Create a new todo"""
         db_todo = TodoModel(
             title=todo.title,
             description=todo.description,
-            is_done=todo.is_done
+            is_done=todo.is_done,
+            owner_id=owner_id
         )
         self.db.add(db_todo)
         self.db.commit()
@@ -24,13 +25,17 @@ class TodoRepository:
         return db_todo
     
     def get_all(self, 
+               owner_id: int,
                is_done: Optional[bool] = None, 
                q: Optional[str] = None, 
                sort: Optional[str] = None,
                limit: int = 10,
                offset: int = 0) -> tuple[List[TodoModel], int]:
-        """Get todos with filtering, searching and sorting. Returns (items, total)"""
+        """Get todos for user with filtering, searching and sorting. Returns (items, total)"""
         query = self.db.query(TodoModel)
+        
+        # Filter by owner
+        query = query.filter(TodoModel.owner_id == owner_id)
         
         # Filter by is_done status
         if is_done is not None:
@@ -62,13 +67,16 @@ class TodoRepository:
         
         return query.all(), total
     
-    def get_by_id(self, todo_id: int) -> Optional[TodoModel]:
-        """Get todo by ID"""
-        return self.db.query(TodoModel).filter(TodoModel.id == todo_id).first()
+    def get_by_id(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
+        """Get todo by ID and verify ownership"""
+        return self.db.query(TodoModel).filter(
+            TodoModel.id == todo_id,
+            TodoModel.owner_id == owner_id
+        ).first()
     
-    def update(self, todo_id: int, todo_update: TodoUpdate) -> Optional[TodoModel]:
-        """Update todo"""
-        db_todo = self.get_by_id(todo_id)
+    def update(self, todo_id: int, todo_update: TodoUpdate, owner_id: int) -> Optional[TodoModel]:
+        """Update todo - verify ownership"""
+        db_todo = self.get_by_id(todo_id, owner_id)
         if not db_todo:
             return None
         
@@ -83,9 +91,9 @@ class TodoRepository:
         self.db.refresh(db_todo)
         return db_todo
     
-    def delete(self, todo_id: int) -> bool:
-        """Delete todo"""
-        db_todo = self.get_by_id(todo_id)
+    def delete(self, todo_id: int, owner_id: int) -> bool:
+        """Delete todo - verify ownership"""
+        db_todo = self.get_by_id(todo_id, owner_id)
         if not db_todo:
             return False
         
@@ -93,9 +101,9 @@ class TodoRepository:
         self.db.commit()
         return True
     
-    def mark_complete(self, todo_id: int) -> Optional[TodoModel]:
-        """Mark todo as complete"""
-        db_todo = self.get_by_id(todo_id)
+    def mark_complete(self, todo_id: int, owner_id: int) -> Optional[TodoModel]:
+        """Mark todo as complete - verify ownership"""
+        db_todo = self.get_by_id(todo_id, owner_id)
         if not db_todo:
             return None
         

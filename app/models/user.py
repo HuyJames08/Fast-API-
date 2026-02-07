@@ -1,8 +1,11 @@
-# User model
-# Will be implemented in Level 5
+from sqlalchemy import Column, String, Boolean
+from app.models.base import Base, BaseModel
 
-# from sqlalchemy import Column, Integer, String, Boolean, DateTime
-# from .base import Base
 
-# TODO: Implement in Level 5
-pass
+class User(BaseModel):
+    """User ORM Model"""
+    __tablename__ = "users"
+    
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, index=True)
