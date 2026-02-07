@@ -1,7 +1,9 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, and_
+from datetime import datetime, date
 from app.models.todo import Todo as TodoModel
+from app.models.tag import Tag as TagModel
 from app.schemas.todo import TodoCreate, TodoUpdate
 
 
@@ -17,8 +19,19 @@ class TodoRepository:
             title=todo.title,
             description=todo.description,
             is_done=todo.is_done,
+            due_date=todo.due_date,
             owner_id=owner_id
         )
+        
+        # Add tags if provided
+        if todo.tags:
+            for tag_name in todo.tags:
+                tag = self.db.query(TagModel).filter(TagModel.name == tag_name).first()
+                if not tag:
+                    tag = TagModel(name=tag_name)
+                    self.db.add(tag)
+                db_todo.tags.append(tag)
+        
         self.db.add(db_todo)
         self.db.commit()
         self.db.refresh(db_todo)
@@ -86,6 +99,18 @@ class TodoRepository:
             db_todo.description = todo_update.description
         if todo_update.is_done is not None:
             db_todo.is_done = todo_update.is_done
+        if todo_update.due_date is not None:
+            db_todo.due_date = todo_update.due_date
+        
+        # Update tags if provided
+        if todo_update.tags is not None:
+            db_todo.tags = []
+            for tag_name in todo_update.tags:
+                tag = self.db.query(TagModel).filter(TagModel.name == tag_name).first()
+                if not tag:
+                    tag = TagModel(name=tag_name)
+                    self.db.add(tag)
+                db_todo.tags.append(tag)
         
         self.db.commit()
         self.db.refresh(db_todo)
@@ -111,3 +136,30 @@ class TodoRepository:
         self.db.commit()
         self.db.refresh(db_todo)
         return db_todo
+    
+    def get_overdue(self, owner_id: int, limit: int = 10, offset: int = 0) -> tuple[List[TodoModel], int]:
+        """Get overdue todos (past due_date and not done)"""
+        query = self.db.query(TodoModel).filter(
+            TodoModel.owner_id == owner_id,
+            TodoModel.is_done == False,
+            TodoModel.due_date < datetime.now()
+        )
+        
+        total = query.count()
+        query = query.order_by(TodoModel.due_date).offset(offset).limit(limit)
+        return query.all(), total
+    
+    def get_today(self, owner_id: int, limit: int = 10, offset: int = 0) -> tuple[List[TodoModel], int]:
+        """Get today's todos (due_date is today and not done)"""
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_end = datetime.combine(date.today(), datetime.max.time())
+        
+        query = self.db.query(TodoModel).filter(
+            TodoModel.owner_id == owner_id,
+            TodoModel.is_done == False,
+            and_(TodoModel.due_date >= today_start, TodoModel.due_date <= today_end)
+        )
+        
+        total = query.count()
+        query = query.order_by(TodoModel.due_date).offset(offset).limit(limit)
+        return query.all(), total

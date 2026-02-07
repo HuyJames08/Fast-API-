@@ -39,6 +39,36 @@ async def get_todos(
     )
 
 
+@router.get("/overdue", response_model=TodoListResponse)
+async def get_overdue_todos(
+    limit: int = Query(10, ge=1, le=100, description="Number of items per page"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+    todo_service: TodoService = Depends(get_todo_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Get overdue todos (past due_date and not completed - requires authentication)"""
+    return todo_service.get_overdue(
+        owner_id=current_user.id,
+        limit=limit,
+        offset=offset
+    )
+
+
+@router.get("/today", response_model=TodoListResponse)
+async def get_today_todos(
+    limit: int = Query(10, ge=1, le=100, description="Number of items per page"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+    todo_service: TodoService = Depends(get_todo_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Get today's todos (due_date is today and not completed - requires authentication)"""
+    return todo_service.get_today(
+        owner_id=current_user.id,
+        limit=limit,
+        offset=offset
+    )
+
+
 @router.get("/{todo_id}", response_model=Todo)
 async def get_todo(
     todo_id: int,

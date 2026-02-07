@@ -13,12 +13,7 @@ class TodoService:
     
     def create_todo(self, todo: TodoCreate, owner_id: int) -> Todo:
         """Create a new todo for the current user"""
-        # Add owner_id to the todo data
-        todo_data = todo.dict()
-        todo_data['owner_id'] = owner_id
-        from app.schemas.todo import TodoCreate as TodoCreateDict
-        todo_with_owner = TodoCreate(**todo_data)
-        created_todo = self.repo.create(todo_with_owner, owner_id=owner_id)
+        created_todo = self.repo.create(todo, owner_id=owner_id)
         return Todo.from_orm(created_todo)
     
     def get_todos(self, 
@@ -63,3 +58,27 @@ class TodoService:
         if completed_todo:
             return Todo.from_orm(completed_todo)
         return None
+    
+    def get_overdue(self, owner_id: int, limit: int = 10, offset: int = 0) -> TodoListResponse:
+        """Get overdue todos for the current user"""
+        todos, total = self.repo.get_overdue(owner_id=owner_id, limit=limit, offset=offset)
+        todo_objects = [Todo.from_orm(todo) for todo in todos]
+        
+        return TodoListResponse(
+            items=todo_objects,
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+    
+    def get_today(self, owner_id: int, limit: int = 10, offset: int = 0) -> TodoListResponse:
+        """Get today's todos for the current user"""
+        todos, total = self.repo.get_today(owner_id=owner_id, limit=limit, offset=offset)
+        todo_objects = [Todo.from_orm(todo) for todo in todos]
+        
+        return TodoListResponse(
+            items=todo_objects,
+            total=total,
+            limit=limit,
+            offset=offset
+        )

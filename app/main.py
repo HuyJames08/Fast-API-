@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.models.todo import Todo  # Import models to register them
 from app.models.user import User  # Import User model to register it
+from app.models.tag import Tag  # Import Tag model to register it
 from app.routers import health, todos, auth
 
 # Create all tables on startup
