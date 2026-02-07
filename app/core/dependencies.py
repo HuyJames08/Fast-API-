@@ -1,9 +1,9 @@
-# FastAPI dependencies
-# Will be implemented with database sessions and auth
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.services.todo_service import TodoService
 
-# from fastapi import Depends, HTTPException, status
-# from sqlalchemy.orm import Session
 
-# TODO: Implement database dependencies in Level 4
-# TODO: Implement auth dependencies in Level 5
-pass
+def get_todo_service(db: Session = Depends(get_db)) -> TodoService:
+    """Dependency to get TodoService with database session"""
+    return TodoService(db)

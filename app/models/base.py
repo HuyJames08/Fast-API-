@@ -1,9 +1,14 @@
-# Base model for SQLAlchemy
-# Will be implemented in Level 4
+from sqlalchemy import Column, DateTime, Integer
+from sqlalchemy.orm import declarative_base as sql_declarative_base
+from datetime import datetime
 
-# from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy import Column, Integer, DateTime
-# from datetime import datetime
+Base = sql_declarative_base()
 
-# TODO: Implement in Level 4
-pass
+
+class BaseModel(Base):
+    """Base model with common fields"""
+    __abstract__ = True
+    
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

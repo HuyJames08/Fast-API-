@@ -1,8 +1,11 @@
-# Todo model
-# Will be implemented in Level 4
+from sqlalchemy import Column, String, Boolean, Text
+from app.models.base import Base, BaseModel
 
-# from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
-# from .base import Base
 
-# TODO: Implement in Level 4
-pass
+class Todo(BaseModel):
+    """Todo ORM Model"""
+    __tablename__ = "todos"
+    
+    title = Column(String(100), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    is_done = Column(Boolean, default=False, index=True)
